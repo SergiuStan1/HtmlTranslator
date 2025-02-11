@@ -1,4 +1,5 @@
 import os
+import re
 from googletrans import Translator
 
 # Initialize the translator
@@ -12,15 +13,28 @@ exclude_dirs = ['node_modules', 'dist']
 
 # Function to translate text
 def translate_text(text, dest_language='ro'):
-    return translator.translate(text, dest=dest_language).text
+    try:
+        translated = translator.translate(text, dest=dest_language).text
+        return translated
+    except Exception as e:
+        print(f"Error translating text: {text}. Error: {e}")
+        return text
 
 # Function to translate HTML file
 def translate_html_file(filepath):
     with open(filepath, 'r', encoding='utf-8') as file:
         content = file.read()
     
-    # Translate the content
-    translated_content = translate_text(content)
+    # Regular expression to find text within HTML tags
+    def translate_match(match):
+        text = match.group(1).strip()
+        if text:
+            translated_text = translate_text(text)
+            return f'>{translated_text}<'
+        return match.group(0)
+    
+    # Translate the content within tags
+    translated_content = re.sub(r'>([^<]+)<', translate_match, content)
     
     # Write the translated content back to the file
     with open(filepath, 'w', encoding='utf-8') as file:
